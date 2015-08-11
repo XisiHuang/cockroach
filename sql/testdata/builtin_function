@@ -1,0 +1,47 @@
+query I colnames
+SELECT LENGTH('roach7')
+----
+LENGTH('roach7')
+6
+
+statement error LENGTH: argument type mismatch: string expected, but found int
+SELECT LENGTH(23)
+
+statement error LENGTH: incorrect number of arguments: 1 vs 2
+SELECT LENGTH('ab', 'df')
+
+query T colnames
+SELECT UPPER('roacH7')
+----
+UPPER('roacH7')
+ROACH7
+
+statement error UPPER: argument type mismatch: string expected, but found float
+SELECT UPPER(2.2)
+
+query T colnames
+SELECT LOWER('RoacH7')
+----
+LOWER('RoacH7')
+roach7
+
+statement error LOWER: argument type mismatch: string expected, but found int
+SELECT LOWER(32)
+
+query T
+SELECT CONCAT('RoacH', 73, 64.532)
+----
+RoacH7364.532
+
+statement error CONCAT: argument type unsupported: bool
+SELECT CONCAT('RoacH', TRUE, 64.532)
+
+query T
+SELECT SUBSTR('RoacH', 2, 3)
+----
+acH
+
+statement error SUBSTR: invalid argument: 4 is out of bouds
+SELECT SUBSTR('RoacH', 2, 4)
+----
+acH

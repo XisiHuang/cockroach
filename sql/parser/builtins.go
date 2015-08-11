@@ -18,7 +18,9 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -72,11 +74,64 @@ var builtins = map[string]builtin{
 	"upper": stringBuiltin(func(s string) (Datum, error) {
 		return DString(strings.ToUpper(s)), nil
 	}),
+
+	"substr": {
+		nArgs: 3,
+		fn: func(args DTuple) (Datum, error) {
+			dstr, ok := args[0].(DString)
+			if !ok {
+				return DNull, argTypeError(args[0], "string")
+			}
+			str := string(dstr)
+
+			start, ok := args[1].(DInt)
+			if !ok {
+				return DNull, argTypeError(args[1], "int")
+			}
+
+			s := int(start)
+			if s < 0 || s > len(str)-1 {
+				return DNull, invalidArgError(fmt.Sprintf("%d is out of bouds", s))
+			}
+
+			count, ok := args[2].(DInt)
+			if !ok {
+				return DNull, argTypeError(args[2], "int")
+			}
+
+			c := int(count)
+			if c < 0 || s+c > len(str) {
+				return DNull, invalidArgError(fmt.Sprintf("%d is out of bouds", c))
+			}
+
+			return DString(str[s : s+c]), nil
+		},
+	},
+
+	"concat": {
+		nArgs: -1,
+		fn: func(args DTuple) (Datum, error) {
+			var buffer bytes.Buffer
+			for _, d := range args {
+				ds, error := datumToRawString(d)
+				if error != nil {
+					return DNull, error
+				}
+				buffer.WriteString(ds)
+			}
+			s := buffer.String()
+			return DString(s), nil
+		},
+	},
 }
 
 func argTypeError(arg Datum, expected string) error {
 	return fmt.Errorf("argument type mismatch: %s expected, but found %s",
 		expected, arg.Type())
+}
+
+func invalidArgError(desp string) error {
+	return fmt.Errorf("invalid argument: %s", desp)
 }
 
 func stringBuiltin(f func(string) (Datum, error)) builtin {
@@ -89,5 +144,21 @@ func stringBuiltin(f func(string) (Datum, error)) builtin {
 			}
 			return f(string(s))
 		},
+	}
+}
+
+func datumToRawString(datum Datum) (string, error) {
+	switch d := datum.(type) {
+	case DString:
+		return string(d), nil
+
+	case DInt:
+		return strconv.FormatInt(int64(d), 10), nil
+
+	case DFloat:
+		return strconv.FormatFloat(float64(d), 'f', -1, 64), nil
+
+	default:
+		return "", fmt.Errorf("argument type unsupported: %s", datum.Type())
 	}
 }
