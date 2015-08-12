@@ -96,26 +96,34 @@ var builtins = map[string]builtin{
 				return DNull, argTypeError(args[1], "int")
 			}
 
-			s := int(start)
-			if s < 0 || s > len(str)-1 {
-				return DNull, invalidArgError(fmt.Sprintf("%d is out of bounds", s))
-			}
+			s := int(start) - 1
 
-			var c int
+			var e int
 			if argsNum == 2 {
-				c = len(str) - s
+				e = len(str)
 			} else {
 				count, ok := args[2].(DInt)
 				if !ok {
 					return DNull, argTypeError(args[2], "int")
 				}
-				c = int(count)
-				if c < 0 || s+c > len(str) {
-					return DNull, invalidArgError(fmt.Sprintf("%d is out of bounds", c))
+				c := int(count)
+				if c < 0 {
+					return DNull, invalidArgError(fmt.Sprintf("negative substring length not allowed: %d", c))
 				}
+				e = s + c
 			}
 
-			return DString(str[s : s+c]), nil
+			if e <= 0 || s > len(str)-1 {
+				return DString(""), nil
+			}
+
+			if s < 0 {
+				s = 0
+			}
+			if e > len(str) {
+				e = len(str)
+			}
+			return DString(str[s:e]), nil
 		},
 	},
 

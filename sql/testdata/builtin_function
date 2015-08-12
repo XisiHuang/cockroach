@@ -41,7 +41,7 @@ RoacHf64.532t
 query T
 SELECT SUBSTR('RoacH', 2, 3)
 ----
-acH
+oac
 
 # TODO(XisiHuang): the parser doesn't support the fllowing syntax
 #query T
@@ -52,7 +52,27 @@ acH
 query T
 SELECT SUBSTR('RoacH', 2)
 ----
-acH
+oacH
 
-statement error SUBSTR: invalid argument: 4 is out of bounds
-SELECT SUBSTR('RoacH', 2, 4)
+query T
+SELECT SUBSTR('RoacH', -2)
+----
+RoacH
+
+query T
+SELECT SUBSTR('RoacH', -2, 4)
+----
+R
+
+query T
+SELECT SUBSTR('12345', 2, 77)
+----
+2345
+
+query T
+SELECT SUBSTR('12345', -2, 77)
+----
+12345
+
+statement error SUBSTR: invalid argument: negative substring length not allowed: -1
+SELECT SUBSTR('12345', 2, -1)
