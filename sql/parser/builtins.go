@@ -75,9 +75,16 @@ var builtins = map[string]builtin{
 		return DString(strings.ToUpper(s)), nil
 	}),
 
-	"substr": {
-		nArgs: 3,
+	// TODO(XisiHuang): support the substring(str FROM x FOR y) syntax
+	"substring": {
+		nArgs: -1,
 		fn: func(args DTuple) (Datum, error) {
+			argsNum := len(args)
+			if argsNum != 2 && argsNum != 3 {
+				return DNull, fmt.Errorf("incorrect number of arguments: %d vs %s",
+					argsNum, "2 or 3")
+			}
+
 			dstr, ok := args[0].(DString)
 			if !ok {
 				return DNull, argTypeError(args[0], "string")
@@ -91,36 +98,41 @@ var builtins = map[string]builtin{
 
 			s := int(start)
 			if s < 0 || s > len(str)-1 {
-				return DNull, invalidArgError(fmt.Sprintf("%d is out of bouds", s))
+				return DNull, invalidArgError(fmt.Sprintf("%d is out of bounds", s))
 			}
 
-			count, ok := args[2].(DInt)
-			if !ok {
-				return DNull, argTypeError(args[2], "int")
-			}
-
-			c := int(count)
-			if c < 0 || s+c > len(str) {
-				return DNull, invalidArgError(fmt.Sprintf("%d is out of bouds", c))
+			var c int
+			if argsNum == 2 {
+				c = len(str) - s
+			} else {
+				count, ok := args[2].(DInt)
+				if !ok {
+					return DNull, argTypeError(args[2], "int")
+				}
+				c = int(count)
+				if c < 0 || s+c > len(str) {
+					return DNull, invalidArgError(fmt.Sprintf("%d is out of bounds", c))
+				}
 			}
 
 			return DString(str[s : s+c]), nil
 		},
 	},
 
+	// concat concatenate the text representations of all the arguments.
+	// NULL arguments are ignored.
 	"concat": {
 		nArgs: -1,
 		fn: func(args DTuple) (Datum, error) {
 			var buffer bytes.Buffer
 			for _, d := range args {
-				ds, error := datumToRawString(d)
-				if error != nil {
-					return DNull, error
+				ds, err := datumToRawString(d)
+				if err != nil {
+					return DNull, err
 				}
 				buffer.WriteString(ds)
 			}
-			s := buffer.String()
-			return DString(s), nil
+			return DString(buffer.String()), nil
 		},
 	},
 }
@@ -157,6 +169,15 @@ func datumToRawString(datum Datum) (string, error) {
 
 	case DFloat:
 		return strconv.FormatFloat(float64(d), 'f', -1, 64), nil
+
+	case DBool:
+		if bool(d) {
+			return "t", nil
+		}
+		return "f", nil
+
+	case dNull:
+		return "", nil
 
 	default:
 		return "", fmt.Errorf("argument type unsupported: %s", datum.Type())

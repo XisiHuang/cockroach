@@ -29,19 +29,30 @@ statement error LOWER: argument type mismatch: string expected, but found int
 SELECT LOWER(32)
 
 query T
-SELECT CONCAT('RoacH', 73, 64.532)
+SELECT CONCAT('RoacH', null, 73, 64.532)
 ----
 RoacH7364.532
 
-statement error CONCAT: argument type unsupported: bool
-SELECT CONCAT('RoacH', TRUE, 64.532)
+query T
+SELECT CONCAT('RoacH', false, 64.532, TRUE)
+----
+RoacHf64.532t
 
 query T
 SELECT SUBSTR('RoacH', 2, 3)
 ----
 acH
 
-statement error SUBSTR: invalid argument: 4 is out of bouds
-SELECT SUBSTR('RoacH', 2, 4)
+# TODO(XisiHuang): the parser doesn't support the fllowing syntax
+#query T
+#SELECT SUBSTRING('RoacH', 2, 3)
+#----
+#acH
+
+query T
+SELECT SUBSTR('RoacH', 2)
 ----
 acH
+
+statement error SUBSTR: invalid argument: 4 is out of bounds
+SELECT SUBSTR('RoacH', 2, 4)
