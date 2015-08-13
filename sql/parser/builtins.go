@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"crypto/md5"
 )
 
 type builtin struct {
@@ -141,6 +142,21 @@ var builtins = map[string]builtin{
 				buffer.WriteString(ds)
 			}
 			return DString(buffer.String()), nil
+		},
+	},
+
+	"md5": stringBuiltin(func(s string) (Datum, error) {
+		return DString(fmt.Sprintf("%x", md5.Sum([]byte(s)))), nil
+	}),
+
+	"to_hex": {
+		nArgs: 1,
+		fn: func(args DTuple) (Datum, error) {
+			i, ok := args[0].(DInt)
+			if !ok {
+				return DNull, argTypeError(args[0], i.Type())
+			}
+			return DString(fmt.Sprintf("%x", int(i))), nil
 		},
 	},
 }
