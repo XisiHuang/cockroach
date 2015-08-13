@@ -63,6 +63,7 @@ type builtin struct {
 // customize this to our liking. Would be good to support type conversion
 // functions.
 var builtins = map[string]builtin{
+	// TODO(XisiHuang): support encoding, i.e., length(str, encoding).
 	"length": stringBuiltin(func(s string) (Datum, error) {
 		return DInt(len(s)), nil
 	}),
@@ -75,7 +76,7 @@ var builtins = map[string]builtin{
 		return DString(strings.ToUpper(s)), nil
 	}),
 
-	// TODO(XisiHuang): support the substring(str FROM x FOR y) syntax
+	// TODO(XisiHuang): support the substring(str FROM x FOR y) syntax.
 	"substring": {
 		nArgs: -1,
 		fn: func(args DTuple) (Datum, error) {
@@ -87,43 +88,42 @@ var builtins = map[string]builtin{
 
 			dstr, ok := args[0].(DString)
 			if !ok {
-				return DNull, argTypeError(args[0], "string")
+				return DNull, argTypeError(args[0], dstr.Type())
 			}
 			str := string(dstr)
 
 			start, ok := args[1].(DInt)
 			if !ok {
-				return DNull, argTypeError(args[1], "int")
+				return DNull, argTypeError(args[1], start.Type())
 			}
-
-			s := int(start) - 1
+			s := int(start)
 
 			var e int
 			if argsNum == 2 {
-				e = len(str)
+				e = len(str) + 1
 			} else {
 				count, ok := args[2].(DInt)
 				if !ok {
-					return DNull, argTypeError(args[2], "int")
+					return DNull, argTypeError(args[2], count.Type())
 				}
 				c := int(count)
 				if c < 0 {
-					return DNull, invalidArgError(fmt.Sprintf("negative substring length not allowed: %d", c))
+					return DNull, fmt.Errorf("negative substring length not allowed: %d", c)
 				}
 				e = s + c
 			}
 
-			if e <= 0 || s > len(str)-1 {
+			if e <= 1 || s > len(str) {
 				return DString(""), nil
 			}
 
-			if s < 0 {
-				s = 0
+			if s < 1 {
+				s = 1
 			}
-			if e > len(str) {
-				e = len(str)
+			if e > len(str)+1 {
+				e = len(str) + 1
 			}
-			return DString(str[s:e]), nil
+			return DString(str[s-1 : e-1]), nil
 		},
 	},
 
@@ -148,10 +148,6 @@ var builtins = map[string]builtin{
 func argTypeError(arg Datum, expected string) error {
 	return fmt.Errorf("argument type mismatch: %s expected, but found %s",
 		expected, arg.Type())
-}
-
-func invalidArgError(desp string) error {
-	return fmt.Errorf("invalid argument: %s", desp)
 }
 
 func stringBuiltin(f func(string) (Datum, error)) builtin {

@@ -7,9 +7,6 @@ LENGTH('roach7')
 statement error LENGTH: argument type mismatch: string expected, but found int
 SELECT LENGTH(23)
 
-statement error LENGTH: incorrect number of arguments: 1 vs 2
-SELECT LENGTH('ab', 'df')
-
 query T colnames
 SELECT UPPER('roacH7')
 ----
@@ -47,7 +44,7 @@ oac
 #query T
 #SELECT SUBSTRING('RoacH', 2, 3)
 #----
-#acH
+#oac
 
 query T
 SELECT SUBSTR('RoacH', 2)
@@ -74,5 +71,5 @@ SELECT SUBSTR('12345', -2, 77)
 ----
 12345
 
-statement error SUBSTR: invalid argument: negative substring length not allowed: -1
+statement error SUBSTR: negative substring length not allowed: -1
 SELECT SUBSTR('12345', 2, -1)
